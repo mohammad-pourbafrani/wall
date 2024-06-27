@@ -5,12 +5,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import AdSerializer
 from .models import Ad
+from .pagination import StandardResultPagInation
 
 
-class AdListView(APIView):
+class AdListView(APIView , StandardResultPagInation):
     serializer_class = AdSerializer
 
     def get(self, request):
-        querset = Ad.objects.filter(is_public=True)
-        serializer = AdSerializer(instance=querset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = Ad.objects.filter(is_public=True)
+        result = self.paginate_queryset(queryset , request)
+        serializer = AdSerializer(instance=result, many=True)
+        return self.get_paginated_response(serializer.data)
