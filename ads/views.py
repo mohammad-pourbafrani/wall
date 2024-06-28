@@ -10,6 +10,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsPublisherOrReadOnly
 from rest_framework.generics import get_object_or_404
+from drf_spectacular.utils import extend_schema , OpenApiParameter
+from django.db.models import Q 
 
 
 class AdListView(APIView , StandardResultPagInation):
@@ -62,4 +64,20 @@ class AdDetailView(APIView):
         obj = self.get_object()
         obj.delete()
         return Response({"status":"deleted item with id" })
-
+    
+class SearchAdView(APIView , StandardResultPagInation):
+    serializer_class = AdSerializer
+    @extend_schema(parameters=[OpenApiParameter(name='title', description='Title of the item', required=False, type=str)], responses={200: AdSerializer(many=True)})
+    def get(self , request):
+        queryParam= request.GET.get('title')
+        if queryParam != None:
+            queryset = Ad.objects.filter(title__startswith=queryParam)
+            result = self.paginate_queryset(queryset , request)
+            serializer = AdSerializer(instance=result , many = True)
+            return self.get_paginated_response(serializer.data)
+        else:
+            queryset = Ad.objects.all()
+            result = self.paginate_queryset(queryset , request)
+            serializer = AdSerializer(instance=result , many = True)
+            return self.get_paginated_response(serializer.data)
+            
